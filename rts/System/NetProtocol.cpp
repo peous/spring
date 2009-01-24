@@ -34,6 +34,8 @@ CNetProtocol::~CNetProtocol()
 
 void CNetProtocol::InitClient(const char *server_addr, unsigned portnum,unsigned sourceport, const std::string& myName, const std::string& myVersion)
 {
+	GML_STDMUTEX_LOCK(net);
+
 	boost::shared_ptr<netcode::UDPSocket> sock(new netcode::UDPSocket(sourceport));
 	sock->SetBlocking(false);
 	netcode::UDPConnection* conn = new netcode::UDPConnection(sock, server_addr, portnum);
@@ -47,6 +49,8 @@ void CNetProtocol::InitClient(const char *server_addr, unsigned portnum,unsigned
 
 void CNetProtocol::InitLocalClient()
 {
+	GML_STDMUTEX_LOCK(net);
+
 	server.reset(new netcode::CLocalConnection);
 	server->Flush();
 	
@@ -88,6 +92,8 @@ boost::shared_ptr<const netcode::RawPacket> CNetProtocol::GetData()
 
 void CNetProtocol::Send(boost::shared_ptr<const netcode::RawPacket> pkt)
 {
+	GML_STDMUTEX_LOCK(net);
+
 	server->SendData(pkt);
 }
 
@@ -109,6 +115,8 @@ void CNetProtocol::UpdateLoop()
 
 void CNetProtocol::Update()
 {
+	GML_STDMUTEX_LOCK(net);
+
 	server->Update();
 }
 
