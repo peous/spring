@@ -179,7 +179,7 @@ extern boost::recursive_mutex &luamutex;
 extern boost::recursive_mutex featmutex;
 extern boost::recursive_mutex projmutex;
 extern boost::recursive_mutex grassmutex;
-extern boost::recursive_mutex guimutex;
+extern boost::recursive_mutex &guimutex;
 extern boost::recursive_mutex filemutex;
 extern boost::recursive_mutex &qnummutex;
 extern boost::recursive_mutex soundmutex;

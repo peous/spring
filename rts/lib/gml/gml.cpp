@@ -216,7 +216,7 @@ boost::recursive_mutex quadmutex;
 boost::recursive_mutex featmutex;
 boost::recursive_mutex projmutex;
 boost::recursive_mutex grassmutex;
-boost::recursive_mutex guimutex;
+boost::recursive_mutex &guimutex=selmutex;
 boost::recursive_mutex filemutex;
 boost::recursive_mutex &qnummutex=quadmutex;
 boost::recursive_mutex soundmutex;

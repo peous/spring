@@ -69,11 +69,15 @@ bool CNetProtocol::Connected() const
 
 boost::shared_ptr<const netcode::RawPacket> CNetProtocol::Peek(unsigned ahead) const
 {
+	GML_STDMUTEX_LOCK(net);
+
 	return server->Peek(ahead);
 }
 
 boost::shared_ptr<const netcode::RawPacket> CNetProtocol::GetData()
 {
+	GML_STDMUTEX_LOCK(net);
+
 	boost::shared_ptr<const netcode::RawPacket> ret = server->GetData();
 	
 	if (record && ret)
