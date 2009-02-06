@@ -230,6 +230,13 @@ void CUnitHandler::DeleteUnit(CUnit* unit)
 
 void CUnitHandler::DeleteUnitNow(CUnit* delUnit)
 {
+#if defined(USE_GML) && GML_ENABLE_SIM
+	{
+		GML_STDMUTEX_LOCK(dque);
+		LuaUnsyncedCtrl::drawCmdQueueUnits.erase(delUnit);
+	}
+#endif
+
 	int delTeam = 0;
 	int delType = 0;
 	std::list<CUnit*>::iterator usi;
@@ -279,11 +286,6 @@ void CUnitHandler::DeleteUnitNow(CUnit* delUnit)
 	for(int i=0, dcs=unitDrawer->drawCloakedS3O.size(); i<dcs; ++i)
 		if(unitDrawer->drawCloakedS3O[i]==delUnit)
 			unitDrawer->drawCloakedS3O[i]=NULL;
-
-	{
-		GML_STDMUTEX_LOCK(dque);
-		LuaUnsyncedCtrl::drawCmdQueueUnits.erase(delUnit);
-	}
 #endif
 
 	toBeAdded.erase(delUnit);
