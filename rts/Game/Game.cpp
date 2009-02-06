@@ -1785,6 +1785,9 @@ bool CGame::ActionPressed(const Action& action,
 	}
 	else if (cmd == "luaui") {
 		if (guihandler != NULL) {
+
+			GML_STDMUTEX_LOCK(sim); // ActionPressed
+
 			guihandler->RunLayoutCommand(action.extra);
 		}
 	}

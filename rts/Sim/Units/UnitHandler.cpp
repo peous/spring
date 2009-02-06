@@ -39,6 +39,7 @@
 #include "creg/STL_List.h"
 #include "creg/STL_Set.h"
 #include "Rendering/UnitModels/UnitDrawer.h"
+#include "Lua/LuaUnsyncedCtrl.h"
 
 using std::min;
 using std::max;
@@ -278,6 +279,11 @@ void CUnitHandler::DeleteUnitNow(CUnit* delUnit)
 	for(int i=0, dcs=unitDrawer->drawCloakedS3O.size(); i<dcs; ++i)
 		if(unitDrawer->drawCloakedS3O[i]==delUnit)
 			unitDrawer->drawCloakedS3O[i]=NULL;
+
+	{
+		GML_STDMUTEX_LOCK(cai);
+		LuaUnsyncedCtrl::drawCmdQueueUnits.erase(delUnit);
+	}
 #endif
 
 	toBeAdded.erase(delUnit);

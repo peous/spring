@@ -361,7 +361,9 @@ void LuaUnsyncedCtrl::DrawUnitCommandQueues()
 	for (ui = units.begin(); ui != units.end(); ++ui) {
 		CUnit* unit = *ui;
 		if (unit) {
-			unit->commandAI->DrawCommands();
+			CCommandAI *cai=unit->commandAI;
+			if(cai)
+				cai->DrawCommands();
 		}
 	}
 
