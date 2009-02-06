@@ -355,6 +355,7 @@ void LuaUnsyncedCtrl::DrawUnitCommandQueues()
 	glLineWidth(cmdColors.QueuedLineWidth());
 
 	GML_STDMUTEX_LOCK(cai); // DrawUnitCommandQueues
+	GML_STDMUTEX_LOCK(dque); // DrawUnitCommandQueues
 
 	const CUnitSet& units = drawCmdQueueUnits;
 	CUnitSet::const_iterator ui;
@@ -375,7 +376,7 @@ void LuaUnsyncedCtrl::DrawUnitCommandQueues()
 
 void LuaUnsyncedCtrl::ClearUnitCommandQueues()
 {
-	GML_STDMUTEX_LOCK(cai); // ClearUnitCommandQueues
+	GML_STDMUTEX_LOCK(dque); // ClearUnitCommandQueues
 
 	drawCmdQueueUnits.clear();
 }
@@ -646,7 +647,7 @@ int LuaUnsyncedCtrl::AddWorldUnit(lua_State* L)
 
 int LuaUnsyncedCtrl::DrawUnitCommands(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(cai); // DrawUnitCommands
+	GML_STDMUTEX_LOCK(dque); // DrawUnitCommands
 
 	if (lua_istable(L, 1)) {
 		const bool isMap = lua_isboolean(L, 2) && lua_toboolean(L, 2);

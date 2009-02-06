@@ -281,7 +281,7 @@ void CUnitHandler::DeleteUnitNow(CUnit* delUnit)
 			unitDrawer->drawCloakedS3O[i]=NULL;
 
 	{
-		GML_STDMUTEX_LOCK(cai);
+		GML_STDMUTEX_LOCK(dque);
 		LuaUnsyncedCtrl::drawCmdQueueUnits.erase(delUnit);
 	}
 #endif

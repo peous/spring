@@ -170,6 +170,7 @@ extern boost::mutex histmutex;
 extern boost::mutex logmutex;
 extern boost::mutex timemutex;
 extern boost::mutex watermutex;
+extern boost::mutex dquemutex;
 
 #include <boost/thread/recursive_mutex.hpp>
 extern boost::recursive_mutex unitmutex;
