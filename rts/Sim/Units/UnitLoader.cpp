@@ -76,7 +76,6 @@ CUnit* CUnitLoader::LoadUnit(const string& name, float3 pos, int team,
 {
 //	GML_RECMUTEX_LOCK(unit); // LoadUnit. Unitinit puts unit in the quadfield and activeUnits -
 	GML_RECMUTEX_LOCK(sel); // LoadUnit. For anti deadlock purposes.
-	GML_RECMUTEX_LOCK(proj); // LoadUnit. For anti deadlock purposes.
 	GML_RECMUTEX_LOCK(quad); // LoadUnit. - make sure other threads cannot access an incomplete unit
 
 	CUnit* unit;
