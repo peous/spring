@@ -36,7 +36,7 @@ sys.path.append(tmpBuildScriptsDir)
 
 import filelist
 
-filelist.setSourceRootDir(os.path.abspath(os.getcwd()))
+#filelist.setSourceRootDir(os.path.abspath(os.getcwd()))
 
 if sys.platform == 'win32':
 	# force to mingw, otherwise picks up msvc
@@ -131,8 +131,8 @@ spring_files += [ddlcpp]
 springenv = env.Clone(CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])
 if env['platform'] == 'windows':
 	# create import library and .def file on Windows
-	springDef = os.path.join(env['builddir'], 'spring.def')
-	springA = os.path.join(env['builddir'], 'spring.a')
+	springDef = 'game/spring.def'
+	springA = 'game/spring.a'
 	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--output-def,' + springDef]
 	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--kill-at', '--add-stdcall-alias']
 	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--out-implib,' + springA]
@@ -140,7 +140,7 @@ if env['platform'] == 'windows':
 	instSpringSuppl += [env.Install(os.path.join(env['installprefix'], env['bindir']), springA)]
 	Alias('install', instSpringSuppl)
 	Alias('install-spring', instSpringSuppl)
-spring = springenv.Program(os.path.join(springenv['builddir'], 'spring'), spring_files)
+spring = springenv.Program('game/spring', spring_files)
 
 Alias('spring', spring)
 Default(spring)
@@ -219,7 +219,7 @@ else:
 	unitsync_objects += [ ddlcpp ]
 # some scons stupidity
 unitsync_objects += [uenv.SharedObject(source=f, target=os.path.join(uenv['builddir'], f)+uenv['SHARED_OBJ_EXT']) for f in unitsync_files]
-unitsync = uenv.SharedLibrary(os.path.join(uenv['builddir'], 'unitsync'), unitsync_objects)
+unitsync = uenv.SharedLibrary('game/unitsync', unitsync_objects)
 
 Alias('unitsync', unitsync)
 inst = env.Install(os.path.join(env['installprefix'], env['libdir']), unitsync)
@@ -308,31 +308,36 @@ if 'test' in sys.argv and env['platform'] != 'windows':
 # Can't use these, we can't set the working directory and putting a SConscript
 # in the respective directories doesn't work either because then the SConstript
 # ends up in the zip too... Bah. SCons sucks. Just like autoshit and everything else btw.
-#env.Zip('game/base/springcontent.sdz', filelist.list_files(env, 'installer/builddata/springcontent'))
-#env.Zip('game/base/spring/bitmaps.sdz', filelist.list_files(env, 'installer/builddata/bitmaps'))
+base_dir = os.path.join(env['builddir'], 'base')
+springcontentArch = os.path.join(base_dir, 'springcontent.sdz')
+maphelperArch =     os.path.join(base_dir, 'maphelper.sdz')
+cursorsArch =       os.path.join(base_dir, 'cursors.sdz')
+bitmapsArch =       os.path.join(base_dir, 'spring', 'bitmaps.sdz')
+#env.Zip(springcontentArch, filelist.list_files(env, 'installer/builddata/springcontent'))
+#env.Zip(bitmapsArch, filelist.list_files(env, 'installer/builddata/bitmaps'))
 
 if not 'configure' in sys.argv and not 'test' in sys.argv and not 'install' in sys.argv:
 	if sys.platform != 'win32':
 		if env.GetOption('clean'):
-			if os.system("rm -f game/base/springcontent.sdz"):
+			if os.system("rm -f " + springcontentArch):
 				env.Exit(1)
-			if os.system("rm -f game/base/spring/bitmaps.sdz"):
+			if os.system("rm -f " + bitmapsArch):
 				env.Exit(1)
-			if os.system("rm -f game/base/maphelper.sdz"):
+			if os.system("rm -f " + maphelperArch):
 				env.Exit(1)
-			if os.system("rm -f game/base/cursors.sdz"):
+			if os.system("rm -f " + cursorsArch):
 				env.Exit(1)
 		else:
-			if os.system("installer/make_gamedata_arch.sh"):
+			if os.system("installer/make_gamedata_arch.sh " + base_dir):
 				env.Exit(1)
 
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/springcontent.sdz')
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), springcontentArch)
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/maphelper.sdz')
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), maphelperArch)
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/cursors.sdz')
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), cursorsArch)
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base/spring'), 'game/base/spring/bitmaps.sdz')
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base/spring'), bitmapsArch)
 Alias('install', inst)
 
 # install fonts
