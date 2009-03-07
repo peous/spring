@@ -6,6 +6,12 @@ import os, re
 ### functions to make lists of source files ###
 ###############################################
 
+import sys
+sourceRootDir = ''
+def setSourceRootDir(absPath):
+	global sourceRootDir
+	sys.stderr.write("\tsetSourceRootDir: " + absPath)
+	sourceRootDir = absPath
 
 def fix_path(path):
 	pieces = path.split('/')
