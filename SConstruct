@@ -23,23 +23,80 @@ Each target has an equivalent install target. E.g. `CentralBuildAI' has
 
 
 import os, sys
-sys.path.append('rts/build/scons')
+
+# copy our build scripts to a tmp dir,
+# so compiled files (*.pyc) do not end up in our source tree
+import tempfile, hashlib, shutil
+sourceDirHash = hashlib.md5(os.getcwd()).hexdigest()
+tmpBuildScriptsDir = os.path.join(tempfile.gettempdir(), 'springSconsBuildScripts', sourceDirHash)
+shutil.rmtree(tmpBuildScriptsDir, True)
+print('SCons tools copied to tmp-dir: ' + tmpBuildScriptsDir)
+shutil.copytree('rts/build/scons', tmpBuildScriptsDir)
+sys.path.append(tmpBuildScriptsDir)
+
 import filelist
+
+#filelist.setSourceRootDir(os.path.abspath(os.getcwd()))
 
 if sys.platform == 'win32':
 	# force to mingw, otherwise picks up msvc
-	myTools = ['mingw', 'rts', 'gch']
+	myTools = ['mingw']
 else:
-	myTools = ['default', 'rts', 'gch']
+	myTools = ['default']
+myTools += ['rts', 'gch']
 
-env = Environment(tools = myTools, toolpath = ['.', 'rts/build/scons'])
+env = Environment(tools = myTools, toolpath = ['.', tmpBuildScriptsDir])
+#env = Environment(tools = myTools, toolpath = ['.', tmpBuildScriptsDir], ENV = {'PATH' : os.environ['PATH']})
+if env['platform'] == 'windows':
+        env['SHARED_OBJ_EXT'] = '.o'
+else:
+        env['SHARED_OBJ_EXT'] = '.os'
 
 if env['use_gch']:
-	env['Gch'] = env.Gch('rts/System/StdAfx.h', CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])[0]
+	env['Gch'] = env.Gch(source='rts/System/StdAfx.h', target=os.path.join(env['builddir'], 'rts/System/StdAfx.h.gch'), CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])[0]
 else:
 	import os.path
 	if os.path.exists('rts/System/StdAfx.h.gch'):
 		os.unlink('rts/System/StdAfx.h.gch')
+
+def createStaticExtLibraryBuilder(env):
+	"""This is a utility function that creates the StaticExtLibrary
+	Builder in an Environment if it is not there already.
+
+	If it is already there, we return the existing one."""
+	import SCons.Action
+
+	try:
+		static_extlib = env['BUILDERS']['StaticExtLibrary']
+	except KeyError:
+		action_list = [ SCons.Action.Action("$ARCOM", "$ARCOMSTR") ]
+		if env.Detect('ranlib'):
+			ranlib_action = SCons.Action.Action("$RANLIBCOM", "$RANLIBCOMSTR")
+			action_list.append(ranlib_action)
+
+	static_extlib = SCons.Builder.Builder(action = action_list,
+											emitter = '$LIBEMITTER',
+											prefix = '$LIBPREFIX',
+											suffix = '$LIBSUFFIX',
+											src_suffix = '$OBJSUFFIX',
+											src_builder = 'SharedObject')
+
+	env['BUILDERS']['StaticExtLibrary'] = static_extlib
+	return static_extlib 
+
+
+# stores shared objects so newer scons versions don't choke with
+def create_static_objects(env, fileList, suffix, additionalCPPDEFINES = []):
+	objsList = []
+	myEnv = env.Clone()
+	myEnv.AppendUnique(CPPDEFINES = additionalCPPDEFINES)
+	for f in fileList:
+		while isinstance(f, list):
+			f = f[0]
+		fpath, fbase = os.path.split(f)
+		fname, fext = fbase.rsplit('.', 1)
+		objsList.append(myEnv.StaticObject(os.path.join(fpath, fname + suffix), f))
+	return objsList
 
 
 ################################################################################
@@ -71,12 +128,19 @@ else:
 ddlcpp = env.Object(os.path.join(env['builddir'], 'rts/System/FileSystem/DataDirLocater.cpp'), CPPDEFINES = env['CPPDEFINES']+env['spring_defines']+datadir)
 spring_files += [ddlcpp]
 
-springenv = env.Clone()
-
-if env['platform'] != 'windows':
-	spring = springenv.Program('game/spring', spring_files, CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])
-else: # create import library and .def file on Windows
-	spring = springenv.Program('game/spring', spring_files, CPPDEFINES=env['CPPDEFINES']+env['spring_defines'], LINKFLAGS=env['LINKFLAGS'] + ['-Wl,--output-def,game/spring.def', '-Wl,--kill-at', '--add-stdcall-alias','-Wl,--out-implib,game/spring.a'] )
+springenv = env.Clone(CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])
+if env['platform'] == 'windows':
+	# create import library and .def file on Windows
+	springDef = os.path.join(env['builddir'], 'spring.def')
+	springA = os.path.join(env['builddir'], 'spring.a')
+	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--output-def,' + springDef]
+	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--kill-at', '--add-stdcall-alias']
+	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--out-implib,' + springA]
+	instSpringSuppl = [env.Install(os.path.join(env['installprefix'], env['bindir']), springDef)]
+	instSpringSuppl += [env.Install(os.path.join(env['installprefix'], env['bindir']), springA)]
+	Alias('install', instSpringSuppl)
+	Alias('install-spring', instSpringSuppl)
+spring = springenv.Program(os.path.join(springenv['builddir'], 'spring'), spring_files)
 
 Alias('spring', spring)
 Default(spring)
