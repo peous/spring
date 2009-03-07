@@ -244,63 +244,16 @@ if env['platform'] != 'windows':
 ################################################################################
 # Make a copy of the build environment for the AIs, but remove libraries and add include path.
 # TODO: make separate SConstructs for AIs
-aienv = env.Clone()
-aienv.AppendUnique(CPPPATH = ['rts/ExternalAI'])
-aienv.AppendUnique(CPPDEFINES=['USING_CREG'])
 
-# Use subst() to substitute $installprefix in datadir.
-install_dir = os.path.join(aienv['installprefix'], aienv['libdir'], 'AI/Helper-libs')
-
-# store shared ai objects so newer scons versions don't choke with
-# *** Two environments with different actions were specified for the same target
-aiobjs = []
-for f in filelist.get_shared_AI_source(aienv):
-        while isinstance(f, list):
-                f = f[0]
-        fpath, fbase = os.path.split(f)
-        fname, fext = fbase.rsplit('.', 1)
-        aiobjs.append(aienv.SharedObject(os.path.join(fpath, fname + '-ai'), f))
-
-#Build GroupAIs
-for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
-	lib = aienv.SharedLibrary(os.path.join('game/AI/Helper-libs', f), aiobjs + filelist.get_groupAI_source(aienv, f))
-	Alias(f, lib)         # Allow e.g. `scons CentralBuildAI' to compile just an AI.
-	Alias('GroupAI', lib) # Allow `scons GroupAI' to compile all groupAIs.
-	Default(lib)
-	inst = env.Install(install_dir, lib)
-	Alias('install', inst)
-	Alias('install-GroupAI', inst)
-	Alias('install-'+f, inst)
-	if aienv['strip']:
-		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
-
-install_dir = os.path.join(aienv['installprefix'], aienv.subst(aienv['libdir']), 'AI/Bot-libs')
-
-#Build GlobalAIs
-for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABICAI','AbicWrappersTestAI']):
-	lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs', f), aiobjs + filelist.get_globalAI_source(aienv, f))
-	Alias(f, lib)          # Allow e.g. `scons JCAI' to compile just a global AI.
-	Alias('GlobalAI', lib) # Allow `scons GlobalAI' to compile all globalAIs.
-	Default(lib)
-	inst = env.Install(install_dir, lib)
-	Alias('install', inst)
-	Alias('install-GlobalAI', inst)
-	Alias('install-'+f, inst)
-	if aienv['strip']:
-		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
-
-# build TestABICAI
-# lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs','TestABICAI'), ['game/spring.a'], CPPDEFINES = env# ['CPPDEFINES'] + ['BUILDING_AI'] )
-# Alias('TestABICAI', lib)
-# Alias('install-TestABICAI', inst)
-# if sys.platform == 'win32':
-# 	Alias('GlobalAI', lib)
-# 	Default(lib)
-# 	inst = env.Install(install_dir, lib)
-# 	Alias('install', inst)
-# 	Alias('install-GlobalAI', inst)
-# 	if env['strip']:
-# 		env.AddPostAction(lib, Action([['strip','$TARGET']]))
+print('AI installprefix: ' + os.path.join(env['installprefix'], env['libdir'], 'AI'))
+ai_env = env.Clone(
+		builddir = os.path.join(env['builddir'], 'AI'),
+		installprefix = os.path.join(env['installprefix'], env['libdir'], 'AI')
+		)
+remove_precompiled_header(ai_env)
+#SConscript(['AI/SConscript'], exports=['env', 'ai_env'], variant_dir=env['builddir'])
+#SConscript(['AI/SConscript'], exports=['env', 'ai_env', 'streflop_lib'])
+#SConscript(['AI/SConscript'], exports=['env', 'ai_env'], variant_dir=ai_env['builddir'])
 
 ################################################################################
 ### Build streflop (which has it's own Makefile-based build system)
@@ -398,13 +351,6 @@ inst = env.Install(os.path.join(env['installprefix'], 'share/pixmaps'), 'rts/spr
 Alias('install', inst)
 inst = env.Install(os.path.join(env['installprefix'], 'share/applications'), 'installer/freedesktop/applications/spring.desktop')
 Alias('install', inst)
-
-# install AAI config files
-aai_data=filelist.list_files_recursive(env, 'game/AI/AAI')
-for f in aai_data:
-	if not os.path.isdir(f):
-		inst = env.Install(os.path.join(aienv['installprefix'], aienv['datadir'], os.path.dirname(f)[5:]), f)
-		Alias('install', inst)
 
 # install LuaUI files
 for f in ['luaui.lua']:
