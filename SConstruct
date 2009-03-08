@@ -153,8 +153,8 @@ Alias('install-unitsync', inst)
 if env['strip']:
 	env.AddPostAction(unitsync, Action([['strip','$TARGET']]))
 
-env.AddPostAction(spring,Delete("game/unitsync.a")) 
-env.AddPostAction(spring,Copy("game/", "build/unitsync.a")) 
+env.AddPostAction(unitsync,Delete("game/unitsync.dll")) 
+env.AddPostAction(unitsync,Copy("game/", "build/unitsync.dll")) 
 
 # Somehow unitsync fails to build with mingw:
 #  "build\tools\unitsync\pybind.o(.text+0x129d): In function `initunitsync':
