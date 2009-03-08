@@ -140,7 +140,7 @@ if env['platform'] == 'windows':
 	instSpringSuppl += [env.Install(os.path.join(env['installprefix'], env['bindir']), springA)]
 	Alias('install', instSpringSuppl)
 	Alias('install-spring', instSpringSuppl)
-spring = springenv.Program('game/spring', spring_files)
+spring = springenv.Program('game/../game/./spring', spring_files)
 
 Alias('spring', spring)
 Default(spring)
