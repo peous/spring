@@ -23,80 +23,23 @@ Each target has an equivalent install target. E.g. `CentralBuildAI' has
 
 
 import os, sys
-
-# copy our build scripts to a tmp dir,
-# so compiled files (*.pyc) do not end up in our source tree
-import tempfile, hashlib, shutil
-sourceDirHash = hashlib.md5(os.getcwd()).hexdigest()
-tmpBuildScriptsDir = os.path.join(tempfile.gettempdir(), 'springSconsBuildScripts', sourceDirHash)
-shutil.rmtree(tmpBuildScriptsDir, True)
-print('SCons tools copied to tmp-dir: ' + tmpBuildScriptsDir)
-shutil.copytree('rts/build/scons', tmpBuildScriptsDir)
-sys.path.append(tmpBuildScriptsDir)
-
+sys.path.append('rts/build/scons')
 import filelist
-
-#filelist.setSourceRootDir(os.path.abspath(os.getcwd()))
 
 if sys.platform == 'win32':
 	# force to mingw, otherwise picks up msvc
-	myTools = ['mingw']
+	myTools = ['mingw', 'rts', 'gch']
 else:
-	myTools = ['default']
-myTools += ['rts', 'gch']
+	myTools = ['default', 'rts', 'gch']
 
-env = Environment(tools = myTools, toolpath = ['.', tmpBuildScriptsDir])
-#env = Environment(tools = myTools, toolpath = ['.', tmpBuildScriptsDir], ENV = {'PATH' : os.environ['PATH']})
-if env['platform'] == 'windows':
-        env['SHARED_OBJ_EXT'] = '.o'
-else:
-        env['SHARED_OBJ_EXT'] = '.os'
+env = Environment(tools = myTools, toolpath = ['.', 'rts/build/scons'])
 
 if env['use_gch']:
-	env['Gch'] = env.Gch(source='rts/System/StdAfx.h', target=os.path.join(env['builddir'], 'rts/System/StdAfx.h.gch'), CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])[0]
+	env['Gch'] = env.Gch('rts/System/StdAfx.h', CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])[0]
 else:
 	import os.path
 	if os.path.exists('rts/System/StdAfx.h.gch'):
 		os.unlink('rts/System/StdAfx.h.gch')
-
-def createStaticExtLibraryBuilder(env):
-	"""This is a utility function that creates the StaticExtLibrary
-	Builder in an Environment if it is not there already.
-
-	If it is already there, we return the existing one."""
-	import SCons.Action
-
-	try:
-		static_extlib = env['BUILDERS']['StaticExtLibrary']
-	except KeyError:
-		action_list = [ SCons.Action.Action("$ARCOM", "$ARCOMSTR") ]
-		if env.Detect('ranlib'):
-			ranlib_action = SCons.Action.Action("$RANLIBCOM", "$RANLIBCOMSTR")
-			action_list.append(ranlib_action)
-
-	static_extlib = SCons.Builder.Builder(action = action_list,
-											emitter = '$LIBEMITTER',
-											prefix = '$LIBPREFIX',
-											suffix = '$LIBSUFFIX',
-											src_suffix = '$OBJSUFFIX',
-											src_builder = 'SharedObject')
-
-	env['BUILDERS']['StaticExtLibrary'] = static_extlib
-	return static_extlib 
-
-
-# stores shared objects so newer scons versions don't choke with
-def create_static_objects(env, fileList, suffix, additionalCPPDEFINES = []):
-	objsList = []
-	myEnv = env.Clone()
-	myEnv.AppendUnique(CPPDEFINES = additionalCPPDEFINES)
-	for f in fileList:
-		while isinstance(f, list):
-			f = f[0]
-		fpath, fbase = os.path.split(f)
-		fname, fext = fbase.rsplit('.', 1)
-		objsList.append(myEnv.StaticObject(os.path.join(fpath, fname + suffix), f))
-	return objsList
 
 
 ################################################################################
@@ -127,20 +70,10 @@ else:
 
 ddlcpp = env.Object(os.path.join(env['builddir'], 'rts/System/FileSystem/DataDirLocater.cpp'), CPPDEFINES = env['CPPDEFINES']+env['spring_defines']+datadir)
 spring_files += [ddlcpp]
-
-springenv = env.Clone(CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])
-if env['platform'] == 'windows':
-	# create import library and .def file on Windows
-	springDef = 'game/spring.def'
-	springA = 'game/spring.a'
-	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--output-def,' + springDef]
-	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--kill-at', '--add-stdcall-alias']
-	springenv['LINKFLAGS'] = springenv['LINKFLAGS'] + ['-Wl,--out-implib,' + springA]
-	instSpringSuppl = [env.Install(os.path.join(env['installprefix'], env['bindir']), springDef)]
-	instSpringSuppl += [env.Install(os.path.join(env['installprefix'], env['bindir']), springA)]
-	Alias('install', instSpringSuppl)
-	Alias('install-spring', instSpringSuppl)
-spring = springenv.Program('game/../game/./spring', spring_files)
+if env['platform'] != 'windows':
+	spring = env.Program('build/spring', spring_files, CPPDEFINES=env['CPPDEFINES']+env['spring_defines'])
+else: # create import library and .def file on Windows
+	spring = env.Program('build/spring', spring_files, CPPDEFINES=env['CPPDEFINES']+env['spring_defines'], LINKFLAGS=env['LINKFLAGS'] + ['-Wl,--output-def,game/spring.def', '-Wl,--kill-at', '--add-stdcall-alias','-Wl,--out-implib,game/spring.a'] )
 
 Alias('spring', spring)
 Default(spring)
@@ -152,6 +85,8 @@ Alias('install-spring', inst)
 if env['strip']:
 	env.AddPostAction(spring, Action([['strip','$TARGET']]))
 
+env.AddPostAction(spring,Delete("game/spring.exe")) 
+env.AddPostAction(spring,Copy("game/", "build/spring.exe")) 
 
 ################################################################################
 ### Build unitsync shared object
@@ -159,30 +94,20 @@ if env['strip']:
 # HACK   we should probably compile libraries from 7zip, hpiutil2 and minizip
 # so we don't need so much bloat here.
 # Need a new env otherwise scons chokes on equal targets built with different flags.
-usync_builddir = os.path.join(env['builddir'], 'unitsync')
-uenv = env.Clone(builddir=usync_builddir)
+uenv = env.Clone(builddir=os.path.join(env['builddir'], 'unitsync'))
 uenv.AppendUnique(CPPDEFINES=['UNITSYNC', 'BITMAP_NO_OPENGL'])
 
-def remove_precompiled_header(env):
-	while 'USE_PRECOMPILED_HEADER' in env['CPPDEFINES']:
-		env['CPPDEFINES'].remove('USE_PRECOMPILED_HEADER')
-	while '-DUSE_PRECOMPILED_HEADER' in env['CFLAGS']:
-		env['CFLAGS'].remove('-DUSE_PRECOMPILED_HEADER')
-	while '-DUSE_PRECOMPILED_HEADER' in env['CXXFLAGS']:
-		env['CXXFLAGS'].remove('-DUSE_PRECOMPILED_HEADER')
+for d in filelist.list_directories(uenv, 'rts', exclude_list=["crashrpt"]):
+	uenv.BuildDir(os.path.join(uenv['builddir'], d), d, duplicate = False)
 
-remove_precompiled_header(uenv)
-
-def usync_get_source(*args, **kwargs):
-	return filelist.get_source(uenv, ignore_builddir=True, *args, **kwargs)
 
 uenv.BuildDir(os.path.join(uenv['builddir'], 'tools/unitsync'), 'tools/unitsync', duplicate = False)
-unitsync_files          = usync_get_source('tools/unitsync')
-unitsync_fs_files       = usync_get_source('rts/System/FileSystem/', exclude_list=('rts/System/FileSystem/DataDirLocater.cpp'));
-unitsync_lua_files      = usync_get_source('rts/lib/lua/src');
-unitsync_7zip_files     = usync_get_source('rts/lib/7zip');
-unitsync_minizip_files  = usync_get_source('rts/lib/minizip', 'rts/lib/minizip/iowin32.c');
-unitsync_hpiutil2_files = usync_get_source('rts/lib/hpiutil2');
+unitsync_files          = filelist.get_source(uenv, 'tools/unitsync');
+unitsync_fs_files       = filelist.get_source(uenv, 'rts/System/FileSystem/', exclude_list=('rts/System/FileSystem/DataDirLocater.cpp'));
+unitsync_lua_files      = filelist.get_source(uenv, 'rts/lib/lua/src');
+unitsync_7zip_files     = filelist.get_source(uenv, 'rts/lib/7zip');
+unitsync_minizip_files  = filelist.get_source(uenv, 'rts/lib/minizip', 'rts/lib/minizip/iowin32.c');
+unitsync_hpiutil2_files = filelist.get_source(uenv, 'rts/lib/hpiutil2');
 unitsync_extra_files = [
 	'rts/Game/GameVersion.cpp',
 	'rts/Lua/LuaUtils.cpp',
@@ -198,28 +123,26 @@ unitsync_extra_files = [
 	'rts/System/ConfigHandler.cpp',
 	'rts/System/LogOutput.cpp',
 ]
-unitsync_files.extend(unitsync_fs_files)
-unitsync_files.extend(unitsync_lua_files)
-unitsync_files.extend(unitsync_7zip_files)
-unitsync_files.extend(unitsync_minizip_files)
-unitsync_files.extend(unitsync_hpiutil2_files)
-unitsync_files.extend(unitsync_extra_files)
+for f in unitsync_fs_files:       unitsync_files += f
+for f in unitsync_lua_files:      unitsync_files += f
+for f in unitsync_7zip_files:     unitsync_files += f
+for f in unitsync_minizip_files:  unitsync_files += f
+for f in unitsync_hpiutil2_files: unitsync_files += f
+for f in unitsync_extra_files:   unitsync_files += [os.path.join(uenv['builddir'], f)]
 
-unitsync_objects = []
 if env['platform'] == 'windows':
 	# crosscompiles on buildbot need this, but native mingw builds fail
 	# during linking
 	if os.name != 'nt':
 		unitsync_files.append('rts/lib/minizip/iowin32.c')
-	unitsync_files.append('rts/System/FileSystem/DataDirLocater.cpp')
+	for f in ['rts/System/FileSystem/DataDirLocater.cpp']:
+		unitsync_files += [os.path.join(uenv['builddir'], f)]
 	# Need the -Wl,--kill-at --add-stdcall-alias because TASClient expects undecorated stdcall functions.
-	uenv['LINKFLAGS'] += ['-Wl,--kill-at', '--add-stdcall-alias']
+	unitsync = uenv.SharedLibrary('build/unitsync', unitsync_files, LINKFLAGS=env['LINKFLAGS'] + ['-Wl,--kill-at', '--add-stdcall-alias'])
 else:
-	ddlcpp = uenv.SharedObject(os.path.join(env['builddir'], 'rts/System/FileSystem/DataDirLocater.cpp'), CPPDEFINES = uenv['CPPDEFINES']+datadir)
-	unitsync_objects += [ ddlcpp ]
-# some scons stupidity
-unitsync_objects += [uenv.SharedObject(source=f, target=os.path.join(uenv['builddir'], f)+uenv['SHARED_OBJ_EXT']) for f in unitsync_files]
-unitsync = uenv.SharedLibrary('game/unitsync', unitsync_objects)
+	ddlcpp = uenv.SharedObject(os.path.join(uenv['builddir'], 'rts/System/FileSystem/DataDirLocater.cpp'), CPPDEFINES = uenv['CPPDEFINES']+datadir)
+	unitsync_files += [ ddlcpp ]
+	unitsync = uenv.SharedLibrary('build/unitsync', unitsync_files)
 
 Alias('unitsync', unitsync)
 inst = env.Install(os.path.join(env['installprefix'], env['libdir']), unitsync)
@@ -229,6 +152,9 @@ Alias('install-unitsync', inst)
 # Strip the DLL if rts.py said so.
 if env['strip']:
 	env.AddPostAction(unitsync, Action([['strip','$TARGET']]))
+
+env.AddPostAction(spring,Delete("game/unitsync.a")) 
+env.AddPostAction(spring,Copy("game/", "build/unitsync.a")) 
 
 # Somehow unitsync fails to build with mingw:
 #  "build\tools\unitsync\pybind.o(.text+0x129d): In function `initunitsync':
@@ -244,16 +170,63 @@ if env['platform'] != 'windows':
 ################################################################################
 # Make a copy of the build environment for the AIs, but remove libraries and add include path.
 # TODO: make separate SConstructs for AIs
+aienv = env.Clone()
+aienv.AppendUnique(CPPPATH = ['rts/ExternalAI'])
+aienv.AppendUnique(CPPDEFINES=['USING_CREG'])
 
-print('AI installprefix: ' + os.path.join(env['installprefix'], env['libdir'], 'AI'))
-ai_env = env.Clone(
-		builddir = os.path.join(env['builddir'], 'AI'),
-		installprefix = os.path.join(env['installprefix'], env['libdir'], 'AI')
-		)
-remove_precompiled_header(ai_env)
-#SConscript(['AI/SConscript'], exports=['env', 'ai_env'], variant_dir=env['builddir'])
-#SConscript(['AI/SConscript'], exports=['env', 'ai_env', 'streflop_lib'])
-#SConscript(['AI/SConscript'], exports=['env', 'ai_env'], variant_dir=ai_env['builddir'])
+# Use subst() to substitute $installprefix in datadir.
+install_dir = os.path.join(aienv['installprefix'], aienv['libdir'], 'AI/Helper-libs')
+
+# store shared ai objects so newer scons versions don't choke with
+# *** Two environments with different actions were specified for the same target
+aiobjs = []
+for f in filelist.get_shared_AI_source(aienv):
+        while isinstance(f, list):
+                f = f[0]
+        fpath, fbase = os.path.split(f)
+        fname, fext = fbase.rsplit('.', 1)
+        aiobjs.append(aienv.SharedObject(os.path.join(fpath, fname + '-ai'), f))
+
+#Build GroupAIs
+for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
+	lib = aienv.SharedLibrary(os.path.join('game/AI/Helper-libs', f), aiobjs + filelist.get_groupAI_source(aienv, f))
+	Alias(f, lib)         # Allow e.g. `scons CentralBuildAI' to compile just an AI.
+	Alias('GroupAI', lib) # Allow `scons GroupAI' to compile all groupAIs.
+	Default(lib)
+	inst = env.Install(install_dir, lib)
+	Alias('install', inst)
+	Alias('install-GroupAI', inst)
+	Alias('install-'+f, inst)
+	if aienv['strip']:
+		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+
+install_dir = os.path.join(aienv['installprefix'], aienv.subst(aienv['libdir']), 'AI/Bot-libs')
+
+#Build GlobalAIs
+for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABICAI','AbicWrappersTestAI']):
+	lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs', f), aiobjs + filelist.get_globalAI_source(aienv, f))
+	Alias(f, lib)          # Allow e.g. `scons JCAI' to compile just a global AI.
+	Alias('GlobalAI', lib) # Allow `scons GlobalAI' to compile all globalAIs.
+	Default(lib)
+	inst = env.Install(install_dir, lib)
+	Alias('install', inst)
+	Alias('install-GlobalAI', inst)
+	Alias('install-'+f, inst)
+	if aienv['strip']:
+		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+
+# build TestABICAI
+# lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs','TestABICAI'), ['game/spring.a'], CPPDEFINES = env# ['CPPDEFINES'] + ['BUILDING_AI'] )
+# Alias('TestABICAI', lib)
+# Alias('install-TestABICAI', inst)
+# if sys.platform == 'win32':
+# 	Alias('GlobalAI', lib)
+# 	Default(lib)
+# 	inst = env.Install(install_dir, lib)
+# 	Alias('install', inst)
+# 	Alias('install-GlobalAI', inst)
+# 	if env['strip']:
+# 		env.AddPostAction(lib, Action([['strip','$TARGET']]))
 
 ################################################################################
 ### Build streflop (which has it's own Makefile-based build system)
@@ -308,36 +281,31 @@ if 'test' in sys.argv and env['platform'] != 'windows':
 # Can't use these, we can't set the working directory and putting a SConscript
 # in the respective directories doesn't work either because then the SConstript
 # ends up in the zip too... Bah. SCons sucks. Just like autoshit and everything else btw.
-base_dir = os.path.join(env['builddir'], 'base')
-springcontentArch = os.path.join(base_dir, 'springcontent.sdz')
-maphelperArch =     os.path.join(base_dir, 'maphelper.sdz')
-cursorsArch =       os.path.join(base_dir, 'cursors.sdz')
-bitmapsArch =       os.path.join(base_dir, 'spring', 'bitmaps.sdz')
-#env.Zip(springcontentArch, filelist.list_files(env, 'installer/builddata/springcontent'))
-#env.Zip(bitmapsArch, filelist.list_files(env, 'installer/builddata/bitmaps'))
+#env.Zip('game/base/springcontent.sdz', filelist.list_files(env, 'installer/builddata/springcontent'))
+#env.Zip('game/base/spring/bitmaps.sdz', filelist.list_files(env, 'installer/builddata/bitmaps'))
 
 if not 'configure' in sys.argv and not 'test' in sys.argv and not 'install' in sys.argv:
 	if sys.platform != 'win32':
 		if env.GetOption('clean'):
-			if os.system("rm -f " + springcontentArch):
+			if os.system("rm -f game/base/springcontent.sdz"):
 				env.Exit(1)
-			if os.system("rm -f " + bitmapsArch):
+			if os.system("rm -f game/base/spring/bitmaps.sdz"):
 				env.Exit(1)
-			if os.system("rm -f " + maphelperArch):
+			if os.system("rm -f game/base/maphelper.sdz"):
 				env.Exit(1)
-			if os.system("rm -f " + cursorsArch):
+			if os.system("rm -f game/base/cursors.sdz"):
 				env.Exit(1)
 		else:
-			if os.system("installer/make_gamedata_arch.sh " + base_dir):
+			if os.system("installer/make_gamedata_arch.sh"):
 				env.Exit(1)
 
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), springcontentArch)
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/springcontent.sdz')
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), maphelperArch)
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/maphelper.sdz')
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), cursorsArch)
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base'), 'game/base/cursors.sdz')
 Alias('install', inst)
-inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base/spring'), bitmapsArch)
+inst = env.Install(os.path.join(env['installprefix'], env['datadir'], 'base/spring'), 'game/base/spring/bitmaps.sdz')
 Alias('install', inst)
 
 # install fonts
@@ -356,6 +324,13 @@ inst = env.Install(os.path.join(env['installprefix'], 'share/pixmaps'), 'rts/spr
 Alias('install', inst)
 inst = env.Install(os.path.join(env['installprefix'], 'share/applications'), 'installer/freedesktop/applications/spring.desktop')
 Alias('install', inst)
+
+# install AAI config files
+aai_data=filelist.list_files_recursive(env, 'game/AI/AAI')
+for f in aai_data:
+	if not os.path.isdir(f):
+		inst = env.Install(os.path.join(aienv['installprefix'], aienv['datadir'], os.path.dirname(f)[5:]), f)
+		Alias('install', inst)
 
 # install LuaUI files
 for f in ['luaui.lua']:

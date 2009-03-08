@@ -6,12 +6,6 @@ import os, re
 ### functions to make lists of source files ###
 ###############################################
 
-import sys
-sourceRootDir = ''
-def setSourceRootDir(absPath):
-	global sourceRootDir
-	sys.stderr.write("\tsetSourceRootDir: " + absPath)
-	sourceRootDir = absPath
 
 def fix_path(path):
 	pieces = path.split('/')
@@ -57,7 +51,7 @@ def list_files_recursive(env, path, exclude_list = (), exclude_regexp = '^\.'):
 	return ffiles
 
 
-def get_source(env, path, exclude_list = (), exclude_regexp = '^\.', ignore_builddir = False):
+def get_source(env, path, exclude_list = (), exclude_regexp = '^\.'):
 	basepath = path
 	path_stack = [path]
 	#what does a source file look like?
@@ -77,7 +71,7 @@ def get_source(env, path, exclude_list = (), exclude_regexp = '^\.', ignore_buil
 				# (Couldn't really use regexp for it since it'd exclude files like TestScript.cpp too)
 				elif os.path.isdir(g) and f.lower() != 'test':
 					path_stack += [g]
-	if not ignore_builddir and env.has_key('builddir') and env['builddir']:
+	if env.has_key('builddir') and env['builddir']:
 		source_files_2 = []
 		for f in source_files:
 			source_files_2.append([os.path.join(env['builddir'], f)])
