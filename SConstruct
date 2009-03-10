@@ -199,16 +199,9 @@ for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
 	Alias('install-'+f, inst)
 	if aienv['strip']:
 		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
-
-aienv.AddPostAction(lib,Delete("game/AI/Helper-libs/*.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/CentralBuildAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/EconomyAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/MetalMakerAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/MexUpgraderAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/RadarAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/ReportIdleAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/SimpleFormationAI.dll")) 
-
+	aienv.AddPostAction(lib,Delete('game/AI/Helper-libs/'+f+'.dll')) 
+	aienv.AddPostAction(lib,Copy('game/AI/Helper-libs/','build/AI/Helper-libs/'+f+'.dll')) 
+	
 install_dir = os.path.join(aienv['installprefix'], aienv.subst(aienv['libdir']), 'AI/Bot-libs')
 
 #Build GlobalAIs
@@ -223,16 +216,8 @@ for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABIC
 	Alias('install-'+f, inst)
 	if aienv['strip']:
 		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
-
-aienv.AddPostAction(lib,Delete("game/AI/Bot-libs/*.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/AAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/JCAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/KAI-0.2.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/KAIK-0.13.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/NTai.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/RAI.dll")) 
-aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/TestGlobalAI.dll"))
-
+	aienv.AddPostAction(lib,Delete('game/AI/Bot-libs/'+f+'.dll')) 
+	aienv.AddPostAction(lib,Copy('game/AI/Bot-libs/','build/AI/Bot-libs/'+f+'.dll')) 
 
 # build TestABICAI
 # lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs','TestABICAI'), ['game/spring.a'], CPPDEFINES = env# ['CPPDEFINES'] + ['BUILDING_AI'] )
