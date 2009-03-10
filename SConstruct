@@ -188,32 +188,51 @@ for f in filelist.get_shared_AI_source(aienv):
         aiobjs.append(aienv.SharedObject(os.path.join(fpath, fname + '-ai'), f))
 
 #Build GroupAIs
-#for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
-#	lib = aienv.SharedLibrary(os.path.join('game/AI/Helper-libs', f), aiobjs + filelist.get_groupAI_source(aienv, f))
-#	Alias(f, lib)         # Allow e.g. `scons CentralBuildAI' to compile just an AI.
-#	Alias('GroupAI', lib) # Allow `scons GroupAI' to compile all groupAIs.
-#	Default(lib)
-#	inst = env.Install(install_dir, lib)
-#	Alias('install', inst)
-#	Alias('install-GroupAI', inst)
-#	Alias('install-'+f, inst)
-#	if aienv['strip']:
-#		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
+	lib = aienv.SharedLibrary(os.path.join('build/AI/Helper-libs', f), aiobjs + filelist.get_groupAI_source(aienv, f))
+	Alias(f, lib)         # Allow e.g. `scons CentralBuildAI' to compile just an AI.
+	Alias('GroupAI', lib) # Allow `scons GroupAI' to compile all groupAIs.
+	Default(lib)
+	inst = env.Install(install_dir, lib)
+	Alias('install', inst)
+	Alias('install-GroupAI', inst)
+	Alias('install-'+f, inst)
+	if aienv['strip']:
+		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+
+aienv.AddPostAction(lib,Delete("game/AI/Helper-libs/*.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/CentralBuildAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/EconomyAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/MetalMakerAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/MexUpgraderAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/RadarAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/ReportIdleAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Helper-libs/", "build/AI/Helper-libs/SimpleFormationAI.dll")) 
 
 install_dir = os.path.join(aienv['installprefix'], aienv.subst(aienv['libdir']), 'AI/Bot-libs')
 
 #Build GlobalAIs
-#for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABICAI','AbicWrappersTestAI']):
-#	lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs', f), aiobjs + filelist.get_globalAI_source(aienv, f))
-#	Alias(f, lib)          # Allow e.g. `scons JCAI' to compile just a global AI.
-#	Alias('GlobalAI', lib) # Allow `scons GlobalAI' to compile all globalAIs.
-#	Default(lib)
-#	inst = env.Install(install_dir, lib)
-#	Alias('install', inst)
-#	Alias('install-GlobalAI', inst)
-#	Alias('install-'+f, inst)
-#	if aienv['strip']:
-#		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABICAI','AbicWrappersTestAI']):
+	lib = aienv.SharedLibrary(os.path.join('build/AI/Bot-libs', f), aiobjs + filelist.get_globalAI_source(aienv, f))
+	Alias(f, lib)          # Allow e.g. `scons JCAI' to compile just a global AI.
+	Alias('GlobalAI', lib) # Allow `scons GlobalAI' to compile all globalAIs.
+	Default(lib)
+	inst = env.Install(install_dir, lib)
+	Alias('install', inst)
+	Alias('install-GlobalAI', inst)
+	Alias('install-'+f, inst)
+	if aienv['strip']:
+		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
+
+aienv.AddPostAction(lib,Delete("game/AI/Bot-libs/*.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/AAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/JCAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/KAI-0.2.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/KAIK-0.13.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/NTai.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/RAI.dll")) 
+aienv.AddPostAction(lib,Copy("game/AI/Bot-libs/", "build/AI/Bot-libs/TestGlobalAI.dll"))
+
 
 # build TestABICAI
 # lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs','TestABICAI'), ['game/spring.a'], CPPDEFINES = env# ['CPPDEFINES'] + ['BUILDING_AI'] )
