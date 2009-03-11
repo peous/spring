@@ -85,8 +85,8 @@ Alias('install-spring', inst)
 if env['strip']:
 	env.AddPostAction(spring, Action([['strip','$TARGET']]))
 
-env.AddPostAction(spring,Delete("game/spring.exe")) 
-env.AddPostAction(spring,Copy("game/", "build/spring.exe")) 
+env.AddPostAction(spring,Delete('game/spring.exe')) 
+env.AddPostAction(spring,Copy('game/spring.exe', 'build/spring.exe')) 
 
 ################################################################################
 ### Build unitsync shared object
@@ -153,8 +153,8 @@ Alias('install-unitsync', inst)
 if env['strip']:
 	env.AddPostAction(unitsync, Action([['strip','$TARGET']]))
 
-env.AddPostAction(unitsync,Delete("game/unitsync.dll")) 
-env.AddPostAction(unitsync,Copy("game/", "build/unitsync.dll")) 
+env.AddPostAction(unitsync,Delete('game/unitsync.dll')) 
+env.AddPostAction(unitsync,Copy('game/unitsync.dll', 'build/unitsync.dll')) 
 
 # Somehow unitsync fails to build with mingw:
 #  "build\tools\unitsync\pybind.o(.text+0x129d): In function `initunitsync':
@@ -200,7 +200,7 @@ for f in filelist.list_groupAIs(aienv, exclude_list=['build']):
 	if aienv['strip']:
 		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
 	aienv.AddPostAction(lib,Delete('game/AI/Helper-libs/'+f+'.dll')) 
-	aienv.AddPostAction(lib,Copy('game/AI/Helper-libs/','build/AI/Helper-libs/'+f+'.dll')) 
+	aienv.AddPostAction(lib,Copy('game/AI/Helper-libs/'+f+'.dll','build/AI/Helper-libs/'+f+'.dll')) 
 	
 install_dir = os.path.join(aienv['installprefix'], aienv.subst(aienv['libdir']), 'AI/Bot-libs')
 
@@ -217,7 +217,7 @@ for f in filelist.list_globalAIs(aienv, exclude_list=['build', 'CSAI', 'TestABIC
 	if aienv['strip']:
 		aienv.AddPostAction(lib, Action([['strip','$TARGET']]))
 	aienv.AddPostAction(lib,Delete('game/AI/Bot-libs/'+f+'.dll')) 
-	aienv.AddPostAction(lib,Copy('game/AI/Bot-libs/','build/AI/Bot-libs/'+f+'.dll')) 
+	aienv.AddPostAction(lib,Copy('game/AI/Bot-libs/'+f+'.dll','build/AI/Bot-libs/'+f+'.dll')) 
 
 # build TestABICAI
 # lib = aienv.SharedLibrary(os.path.join('game/AI/Bot-libs','TestABICAI'), ['game/spring.a'], CPPDEFINES = env# ['CPPDEFINES'] + ['BUILDING_AI'] )

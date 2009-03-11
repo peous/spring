@@ -1746,7 +1746,7 @@ int LuaUnsyncedRead::GetActionHotKeys(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupList(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupList
+	GML_RECMUTEX_LOCK(group); // GetGroupList
 
 	CheckNoArgs(L, __FUNCTION__);
 	if (grouphandlers[gu->myTeam] == NULL) {
@@ -1780,7 +1780,7 @@ int LuaUnsyncedRead::GetSelectedGroup(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupAIList(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupAIList
+	GML_RECMUTEX_LOCK(group); // GetGroupAIList
 
 	CheckNoArgs(L, __FUNCTION__);
 	lua_newtable(L);
@@ -1802,7 +1802,7 @@ int LuaUnsyncedRead::GetGroupAIList(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupAIName(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupAIName
+	GML_RECMUTEX_LOCK(group); // GetGroupAIName
 
 	const int args = lua_gettop(L); // number of arguments
 	if ((args != 1) || !lua_isnumber(L, 1)) {
@@ -1850,7 +1850,7 @@ int LuaUnsyncedRead::GetUnitGroup(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupUnits(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupUnits
+	GML_RECMUTEX_LOCK(group); // GetGroupUnits
 
 	const int groupID = luaL_checkint(L, 1);
 	const vector<CGroup*>& groups = grouphandlers[gu->myTeam]->groups;
@@ -1877,7 +1877,7 @@ int LuaUnsyncedRead::GetGroupUnits(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupUnitsSorted(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupUnitsSorted
+	GML_RECMUTEX_LOCK(group); // GetGroupUnitsSorted
 
 	const int groupID = luaL_checkint(L, 1);
 	const vector<CGroup*>& groups = grouphandlers[gu->myTeam]->groups;
@@ -1918,7 +1918,7 @@ int LuaUnsyncedRead::GetGroupUnitsSorted(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupUnitsCounts(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupUnitsCounts
+	GML_RECMUTEX_LOCK(group); // GetGroupUnitsCounts
 
 	const int groupID = luaL_checkint(L, 1);
 	const vector<CGroup*>& groups = grouphandlers[gu->myTeam]->groups;
@@ -1956,7 +1956,7 @@ int LuaUnsyncedRead::GetGroupUnitsCounts(lua_State* L)
 
 int LuaUnsyncedRead::GetGroupUnitsCount(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // GetGroupUnitsCount
+	GML_RECMUTEX_LOCK(group); // GetGroupUnitsCount
 
 	const int groupID = luaL_checkint(L, 1);
 	const vector<CGroup*>& groups = grouphandlers[gu->myTeam]->groups;

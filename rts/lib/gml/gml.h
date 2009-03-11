@@ -159,7 +159,6 @@ extern boost::mutex treemutex;
 extern boost::mutex modelmutex;
 extern boost::mutex texmutex;
 extern boost::mutex mapmutex;
-extern boost::mutex groupmutex;
 extern boost::mutex inmapmutex;
 extern boost::mutex tempmutex;
 extern boost::mutex posmutex;
@@ -184,6 +183,7 @@ extern boost::recursive_mutex &guimutex;
 extern boost::recursive_mutex filemutex;
 extern boost::recursive_mutex &qnummutex;
 extern boost::recursive_mutex soundmutex;
+extern boost::recursive_mutex groupmutex;
 
 #define GML_STDMUTEX_LOCK(name) boost::mutex::scoped_lock name##lock(name##mutex)
 #define GML_RECMUTEX_LOCK(name) boost::recursive_mutex::scoped_lock name##lock(name##mutex)

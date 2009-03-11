@@ -143,7 +143,7 @@ void CGroup::PostLoad()
 
 bool CGroup::AddUnit(CUnit *unit)
 {
-	GML_STDMUTEX_LOCK(group); // AddUnit
+	GML_RECMUTEX_LOCK(group); // AddUnit
 
 	eventHandler.GroupChanged(id);
 
@@ -165,7 +165,7 @@ bool CGroup::AddUnit(CUnit *unit)
 
 void CGroup::RemoveUnit(CUnit *unit)
 {
-	GML_STDMUTEX_LOCK(group); // RemoveUnit
+	GML_RECMUTEX_LOCK(group); // RemoveUnit
 
 	eventHandler.GroupChanged(id);
 	if(ai)
@@ -347,7 +347,7 @@ void CGroup::CommandFinished(int unit,int type)
 
 void CGroup::ClearUnits(void)
 {
-	GML_STDMUTEX_LOCK(group); // ClearUnits
+	GML_RECMUTEX_LOCK(group); // ClearUnits
 
 	eventHandler.GroupChanged(id);
 	while(!units.empty()){

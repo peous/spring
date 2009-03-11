@@ -1700,7 +1700,7 @@ int LuaUnsyncedCtrl::SetUnitDefImage(lua_State* L)
 
 int LuaUnsyncedCtrl::SetUnitGroup(lua_State* L)
 {
-	GML_STDMUTEX_LOCK(group); // SetUnitGroup
+	GML_RECMUTEX_LOCK(group); // SetUnitGroup
 
 	if (!CheckModUICtrl()) {
 		return 0;

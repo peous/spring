@@ -79,7 +79,7 @@ void CSelectedUnits::ToggleBuildIconsFirst()
 CSelectedUnits::AvailableCommandsStruct CSelectedUnits::GetAvailableCommands()
 {
 	GML_RECMUTEX_LOCK(sel); // GetAvailableCommands
-	GML_STDMUTEX_LOCK(group); // GetAvailableCommands
+	GML_RECMUTEX_LOCK(group); // GetAvailableCommands
 
 	possibleCommandsChanged = false;
 
@@ -252,7 +252,7 @@ CSelectedUnits::AvailableCommandsStruct CSelectedUnits::GetAvailableCommands()
 void CSelectedUnits::GiveCommand(Command c, bool fromUser)
 {
 	GML_RECMUTEX_LOCK(sel); // GiveCommand
-	GML_STDMUTEX_LOCK(group); // GiveCommand
+	GML_RECMUTEX_LOCK(group); // GiveCommand
 
 //	logOutput.Print("Command given %i",c.id);
 	if ((gu->spectating && !gs->godMode) || selectedUnits.empty()) {
@@ -422,7 +422,7 @@ void CSelectedUnits::ClearSelected()
 void CSelectedUnits::SelectGroup(int num)
 {
 	GML_RECMUTEX_LOCK(sel); // SelectGroup
-	GML_STDMUTEX_LOCK(group); // SelectGroup. not needed? only reading group
+	GML_RECMUTEX_LOCK(group); // SelectGroup. not needed? only reading group
 
 	ClearSelected();
 	selectedGroup=num;
@@ -451,7 +451,7 @@ void CSelectedUnits::Draw()
 	glLineWidth(cmdColors.UnitBoxLineWidth());
 
 	GML_RECMUTEX_LOCK(sel); // Draw
-	GML_STDMUTEX_LOCK(group); // Draw
+	GML_RECMUTEX_LOCK(group); // Draw
 
 	if (cmdColors.unitBox[3] > 0.0f) {
 		glColor4fv(cmdColors.unitBox);
@@ -639,7 +639,7 @@ static inline bool IsBetterLeader(const UnitDef* newDef, const UnitDef* oldDef)
 int CSelectedUnits::GetDefaultCmd(CUnit* unit, CFeature* feature)
 {
 	GML_RECMUTEX_LOCK(sel); // GetDefaultCmd
-	GML_STDMUTEX_LOCK(group); // GetDefaultCmd
+	GML_RECMUTEX_LOCK(group); // GetDefaultCmd
 	// NOTE: the unitDef->aihint value is being ignored
 	int luaCmd;
 	if (eventHandler.DefaultCommand(unit, feature, luaCmd)) {
@@ -712,7 +712,7 @@ void CSelectedUnits::DrawCommands()
 	glLineWidth(cmdColors.QueuedLineWidth());
 
 	GML_RECMUTEX_LOCK(sel); // DrawCommands
-	GML_STDMUTEX_LOCK(group); // DrawCommands
+	GML_RECMUTEX_LOCK(group); // DrawCommands
 	GML_STDMUTEX_LOCK(cai); // DrawCommands
 
 	CUnitSet::iterator ui;
@@ -745,7 +745,7 @@ void CSelectedUnits::DrawCommands()
 std::string CSelectedUnits::GetTooltip(void)
 {
 	GML_RECMUTEX_LOCK(sel); // tooltipconsole::draw --> mousehandler::getcurrenttooltip --> gettooltip
-	GML_STDMUTEX_LOCK(group); // GetTooltip
+	GML_RECMUTEX_LOCK(group); // GetTooltip
 
 	std::string s;
 	if ((selectedGroup != -1) && grouphandlers[gu->myTeam]->groups[selectedGroup]->ai) {
@@ -823,7 +823,7 @@ std::string CSelectedUnits::GetTooltip(void)
 void CSelectedUnits::SetCommandPage(int page)
 {
 	GML_RECMUTEX_LOCK(sel); // CGame::Draw --> RunLayoutCommand --> LayoutIcons --> RevertToCmdDesc --> SetCommandPage
-	GML_STDMUTEX_LOCK(group); // SetCommandPage
+	GML_RECMUTEX_LOCK(group); // SetCommandPage
 
 	if(selectedGroup!=-1 && grouphandlers[gu->myTeam]->groups[selectedGroup]->ai){
 		grouphandlers[gu->myTeam]->groups[selectedGroup]->lastCommandPage=page;
